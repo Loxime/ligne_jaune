@@ -80,5 +80,7 @@ echo "=== TESTS HTTP ==="
 ./tests/api/entities-smoke.sh
 ./tests/api/entities-create-smoke.sh
 ./tests/api/entities-show-smoke.sh
+./tests/api/sources-read-smoke.sh
+./tests/api/sources-create-smoke.sh
 
 echo "=== INTEGRATION VALIDEE ==="
