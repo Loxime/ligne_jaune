@@ -3,7 +3,7 @@ set -Eeuo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/../.."
 
-url='http://127.0.0.1:3071/api/entities'
+url="${LJ_BASE_URL:-http://127.0.0.1:3071}/api/entities"
 token_file='.secrets/api_access_token'
 
 [[ -r "$token_file" ]] || {
