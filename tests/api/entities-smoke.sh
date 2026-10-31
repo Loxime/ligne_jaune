@@ -117,11 +117,11 @@ assert_auth_status 400 \
     "$BASE_URL/api/entities?limit%5B%5D=10"
 echo "OK : paramètre tableau rejeté"
 
-echo "=== TEST 8 : écriture interdite ==="
+echo "=== TEST 8 : méthode PUT interdite ==="
 assert_auth_status 405 \
-    --request POST \
+    --request PUT \
     "$BASE_URL/api/entities"
-echo "OK : POST interdit"
+echo "OK : PUT interdit"
 
 echo "=== TEST 9 : healthcheck DB privé ==="
 assert_status 401 "$BASE_URL/api/health/db"
