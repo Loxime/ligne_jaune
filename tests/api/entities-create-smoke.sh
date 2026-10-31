@@ -3,7 +3,17 @@ set -Eeuo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/../.."
 
-url="${LJ_BASE_URL:-http://127.0.0.1:3071}/api/entities"
+# Tests d'écriture : environnement de test exclusivement.
+LJ_COMPOSE_FILE="${LJ_COMPOSE_FILE:-compose.test.yaml}"
+LJ_BASE_URL="${LJ_BASE_URL:-http://127.0.0.1:3072}"
+
+if [[ "$LJ_COMPOSE_FILE" != "compose.test.yaml" ||
+      "$LJ_BASE_URL" != "http://127.0.0.1:3072" ]]; then
+    echo "ERREUR : environnement de test obligatoire." >&2
+    exit 1
+fi
+
+url="${LJ_BASE_URL:-http://127.0.0.1:3072}/api/entities"
 token_file='.secrets/api_access_token'
 
 [[ -r "$token_file" ]] || {
@@ -20,7 +30,7 @@ cleanup() {
         printf \
           "DELETE FROM public.entities WHERE name = '%s';\n" \
           "$test_name" |
-            docker compose -f compose.dev.yaml exec -T db \
+            docker compose -f "$LJ_COMPOSE_FILE" exec -T db \
               psql -X -q -v ON_ERROR_STOP=1 \
               -U ligne_jaune_admin \
               -d ligne_jaune -f - >/dev/null ||
@@ -150,7 +160,7 @@ PY
 )"
 
 count="$(
-    docker compose -f compose.dev.yaml exec -T db \
+    docker compose -f "$LJ_COMPOSE_FILE" exec -T db \
       psql -X -At -v ON_ERROR_STOP=1 \
       -U ligne_jaune_admin \
       -d ligne_jaune \
