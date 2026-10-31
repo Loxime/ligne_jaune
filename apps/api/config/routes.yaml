@@ -22,3 +22,13 @@ api_entity_show:
     path: /api/entities/{id}
     controller: App\Controller\EntityShowController::__invoke
     methods: [GET]
+
+api_sources_index:
+    path: /api/sources
+    controller: App\Controller\SourceIndexController::__invoke
+    methods: [GET]
+
+api_source_show:
+    path: /api/sources/{id}
+    controller: App\Controller\SourceShowController::__invoke
+    methods: [GET]
