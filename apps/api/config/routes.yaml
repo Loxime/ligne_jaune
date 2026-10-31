@@ -7,3 +7,8 @@ api_database_health:
     path: /api/health/db
     controller: App\Controller\DatabaseHealthController::__invoke
     methods: [GET]
+
+api_entities_index:
+    path: /api/entities
+    controller: App\Controller\EntityIndexController::__invoke
+    methods: [GET]
