@@ -76,6 +76,12 @@ compose exec -T db \
     -f - \
   < tests/sql/0003_entity_audit.sql
 
+echo "=== TEST SQL : SOURCES AUDIT ==="
+compose exec -T db \
+  psql -X -v ON_ERROR_STOP=1 \
+    -U ligne_jaune_admin -d ligne_jaune -f - \
+  < tests/sql/0004_source_audit.sql
+
 echo "=== TESTS HTTP ==="
 ./tests/api/entities-smoke.sh
 ./tests/api/entities-create-smoke.sh
