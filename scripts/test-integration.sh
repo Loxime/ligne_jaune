@@ -91,4 +91,6 @@ echo "=== TESTS HTTP ==="
 
 python3 tests/api/identifiers-smoke.py
 
+python3 tests/api/relationships-smoke.py
+
 echo "=== INTEGRATION VALIDEE ==="

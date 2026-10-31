@@ -47,3 +47,13 @@ api_entity_identifiers_create:
     path: /api/entities/{id}/identifiers
     controller: App\Controller\EntityIdentifierController::create
     methods: [POST]
+
+api_relationships_create:
+    path: /api/relationships
+    controller: App\Controller\RelationshipController::create
+    methods: [POST]
+
+api_relationship_show:
+    path: /api/relationships/{id}
+    controller: App\Controller\RelationshipController::show
+    methods: [GET]
