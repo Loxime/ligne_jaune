@@ -37,3 +37,13 @@ api_sources_create:
     path: /api/sources
     controller: App\Controller\SourceCreateController::__invoke
     methods: [POST]
+
+api_entity_identifiers_index:
+    path: /api/entities/{id}/identifiers
+    controller: App\Controller\EntityIdentifierController::index
+    methods: [GET]
+
+api_entity_identifiers_create:
+    path: /api/entities/{id}/identifiers
+    controller: App\Controller\EntityIdentifierController::create
+    methods: [POST]

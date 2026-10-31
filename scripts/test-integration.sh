@@ -89,4 +89,6 @@ echo "=== TESTS HTTP ==="
 ./tests/api/sources-read-smoke.sh
 ./tests/api/sources-create-smoke.sh
 
+python3 tests/api/identifiers-smoke.py
+
 echo "=== INTEGRATION VALIDEE ==="
