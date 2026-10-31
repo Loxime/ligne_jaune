@@ -1,0 +1,43 @@
+# Configuration et secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
+.secrets/
+*.pem
+*.key
+
+# Dépendances
+node_modules/
+vendor/
+.venv/
+__pycache__/
+*.py[cod]
+
+# Compilation
+.nuxt/
+.output/
+dist/
+build/
+coverage/
+
+# Symfony
+/var/
+/public/bundles/
+
+# Stockage local
+.local/
+storage/
+data/
+backups/
+
+# Logs
+*.log
+
+# IDE
+.idea/
+.vscode/
+
+# Système
+.DS_Store
+Thumbs.db

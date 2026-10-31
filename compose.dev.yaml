@@ -1,0 +1,47 @@
+name: ligne-jaune-dev
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: ligne_jaune
+      POSTGRES_USER: ligne_jaune_admin
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+
+    secrets:
+      - db_password
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    networks:
+      - database
+
+    mem_limit: 384m
+    cpus: 0.75
+    pids_limit: 128
+
+    security_opt:
+      - no-new-privileges:true
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U ligne_jaune_admin -d ligne_jaune
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 20s
+
+networks:
+  database:
+    internal: true
+
+volumes:
+  postgres_data:
+
+secrets:
+  db_password:
+    file: ./.secrets/db_password
