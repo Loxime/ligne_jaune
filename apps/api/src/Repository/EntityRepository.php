@@ -86,4 +86,38 @@ final class EntityRepository
             'has_more' => $hasMore,
         ];
     }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function findById(string $id): ?array
+    {
+        $pdo = $this->connections->connect();
+
+        $statement = $pdo->prepare(<<<'SQL'
+            SELECT
+                id,
+                kind,
+                name,
+                description,
+                created_at
+            FROM public.entities
+            WHERE id = CAST(:id AS uuid)
+            LIMIT 1
+            SQL
+        );
+
+        $statement->bindValue(
+            ':id',
+            $id,
+            PDO::PARAM_STR
+        );
+
+        $statement->execute();
+
+        $entity = $statement->fetch(PDO::FETCH_ASSOC);
+
+        return $entity === false ? null : $entity;
+    }
+
 }

@@ -17,3 +17,8 @@ api_entities_create:
     path: /api/entities
     controller: App\Controller\EntityCreateController::__invoke
     methods: [POST]
+
+api_entity_show:
+    path: /api/entities/{id}
+    controller: App\Controller\EntityShowController::__invoke
+    methods: [GET]
