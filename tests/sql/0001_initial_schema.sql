@@ -22,16 +22,6 @@ BEGIN
     VALUES ('company', 'Entreprise Exemple')
     RETURNING id INTO company_id;
 
-    -- Identifiant fictif
-    INSERT INTO entity_identifiers (
-        entity_id, scheme, value
-    )
-    VALUES (
-        company_id,
-        'TEST_IDENTIFIER',
-        'TEST-0001'
-    );
-
     -- Source officielle fictive
     INSERT INTO sources (kind, title)
     VALUES (
@@ -39,6 +29,36 @@ BEGIN
         'Registre officiel fictif'
     )
     RETURNING id INTO official_source_id;
+
+    -- Identifiant fictif avec provenance obligatoire
+    INSERT INTO entity_identifiers (
+        entity_id,
+        scheme,
+        value,
+        source_id,
+        source_locator
+    )
+    VALUES (
+        company_id,
+        'TEST_IDENTIFIER',
+        'TEST-0001',
+        official_source_id,
+        'Section Identification'
+    );
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM entity_identifiers i
+        JOIN sources s ON s.id = i.source_id
+        WHERE i.entity_id = company_id
+          AND i.scheme = 'TEST_IDENTIFIER'
+          AND i.value = 'TEST-0001'
+          AND i.source_locator = 'Section Identification'
+          AND s.kind = 'official'
+    ) THEN
+        RAISE EXCEPTION 'Provenance identifiant absente';
+    END IF;
+
 
     -- Livre fictif
     INSERT INTO sources (kind, title)
