@@ -1,6 +1,9 @@
 services:
   api:
-    image: php:8.4-cli-alpine
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile.dev
+
     restart: unless-stopped
 
     working_dir: /app
@@ -20,6 +23,15 @@ services:
       APP_DEBUG: "1"
       APP_SECRET: "dev-only-change-before-production"
 
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: ligne_jaune
+      DB_USER: ligne_jaune_app
+      DB_PASSWORD_FILE: /run/secrets/app_db_password
+
+    secrets:
+      - app_db_password
+
     volumes:
       - ./apps/api:/app
 
@@ -28,6 +40,11 @@ services:
 
     networks:
       - application
+      - database
+
+    depends_on:
+      db:
+        condition: service_healthy
 
     mem_limit: 384m
     cpus: 0.5
@@ -47,3 +64,7 @@ services:
 networks:
   application:
     driver: bridge
+
+secrets:
+  app_db_password:
+    file: ./.secrets/app_db_password

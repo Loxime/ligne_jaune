@@ -2,3 +2,8 @@ api_health:
     path: /api/health
     controller: App\Controller\HealthController::__invoke
     methods: [GET]
+
+api_database_health:
+    path: /api/health/db
+    controller: App\Controller\DatabaseHealthController::__invoke
+    methods: [GET]
