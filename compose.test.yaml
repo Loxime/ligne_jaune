@@ -1,0 +1,114 @@
+name: ligne-jaune-test
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ligne_jaune
+      POSTGRES_USER: ligne_jaune_admin
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+
+    secrets:
+      - db_password
+
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+
+    networks:
+      - database
+
+    mem_limit: 384m
+    cpus: 0.75
+    pids_limit: 128
+
+    security_opt:
+      - no-new-privileges:true
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U ligne_jaune_admin -d ligne_jaune
+      interval: 5s
+      timeout: 3s
+      retries: 15
+
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile.dev
+
+    working_dir: /app
+
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+
+    command:
+      - php
+      - -S
+      - 0.0.0.0:8080
+      - -t
+      - public
+      - public/index.php
+
+    environment:
+      APP_ENV: dev
+      APP_DEBUG: "1"
+      APP_SECRET: "test-only-not-for-production"
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: ligne_jaune
+      DB_USER: ligne_jaune_app
+      DB_PASSWORD_FILE: /run/secrets/app_db_password
+      API_ACCESS_TOKEN_FILE: /run/secrets/api_access_token
+
+    secrets:
+      - app_db_password
+      - api_access_token
+
+    volumes:
+      - ./apps/api:/app
+
+    ports:
+      - "127.0.0.1:3072:8080"
+
+    networks:
+      - application
+      - database
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+    mem_limit: 384m
+    cpus: 0.5
+    pids_limit: 64
+
+    read_only: true
+
+    tmpfs:
+      - /tmp:rw,nosuid,size=32m
+
+    cap_drop:
+      - ALL
+
+    security_opt:
+      - no-new-privileges:true
+
+networks:
+  application:
+    driver: bridge
+
+  database:
+    internal: true
+
+volumes:
+  postgres_test_data:
+
+secrets:
+  db_password:
+    file: ./.secrets/db_password
+
+  app_db_password:
+    file: ./.secrets/app_db_password
+
+  api_access_token:
+    file: ./.secrets/api_access_token

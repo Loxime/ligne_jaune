@@ -3,6 +3,8 @@ set -Eeuo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
+LJ_COMPOSE_FILE="${LJ_COMPOSE_FILE:-compose.dev.yaml}"
+
 umask 077
 
 SECRET_DIR=".secrets"
@@ -92,7 +94,7 @@ ALTER ROLE ligne_jaune_app
     SET idle_in_transaction_session_timeout = '30s';
 SQL
 
-} | docker compose -f compose.dev.yaml exec -T db \
+} | docker compose -f "$LJ_COMPOSE_FILE" exec -T db \
     psql \
         -X \
         -q \

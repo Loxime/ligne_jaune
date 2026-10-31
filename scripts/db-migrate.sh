@@ -3,6 +3,8 @@ set -Eeuo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
+LJ_COMPOSE_FILE="${LJ_COMPOSE_FILE:-compose.dev.yaml}"
+
 # Vérification des dépendances
 for command in docker flock; do
   if ! command -v "$command" >/dev/null 2>&1; then
@@ -22,7 +24,7 @@ fi
 
 # Connexion administrateur PostgreSQL
 psql_admin() {
-  docker compose -f compose.dev.yaml exec -T db \
+  docker compose -f "$LJ_COMPOSE_FILE" exec -T db \
     psql -X -v ON_ERROR_STOP=1 \
       -U ligne_jaune_admin \
       -d ligne_jaune "$@"
