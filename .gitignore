@@ -41,3 +41,9 @@ backups/
 # Système
 .DS_Store
 Thumbs.db
+
+# Symfony API
+/apps/api/var/
+/apps/api/vendor/
+/apps/api/public/bundles/
+/apps/api/.phpunit.cache/

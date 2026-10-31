@@ -1,0 +1,49 @@
+services:
+  api:
+    image: php:8.4-cli-alpine
+    restart: unless-stopped
+
+    working_dir: /app
+
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+
+    command:
+      - php
+      - -S
+      - 0.0.0.0:8080
+      - -t
+      - public
+      - public/index.php
+
+    environment:
+      APP_ENV: dev
+      APP_DEBUG: "1"
+      APP_SECRET: "dev-only-change-before-production"
+
+    volumes:
+      - ./apps/api:/app
+
+    ports:
+      - "127.0.0.1:3071:8080"
+
+    networks:
+      - application
+
+    mem_limit: 384m
+    cpus: 0.5
+    pids_limit: 64
+
+    read_only: true
+
+    tmpfs:
+      - /tmp:rw,nosuid,size=32m
+
+    cap_drop:
+      - ALL
+
+    security_opt:
+      - no-new-privileges:true
+
+networks:
+  application:
+    driver: bridge
