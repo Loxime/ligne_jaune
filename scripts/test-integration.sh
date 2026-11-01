@@ -82,6 +82,12 @@ compose exec -T db \
     -U ligne_jaune_admin -d ligne_jaune -f - \
   < tests/sql/0004_source_audit.sql
 
+echo "=== TEST SQL : RESEARCH AUDIT ==="
+compose exec -T db \
+  psql -X -v ON_ERROR_STOP=1 \
+    -U ligne_jaune_admin -d ligne_jaune -f - \
+  < tests/sql/0005_research_audit.sql
+
 echo "=== TESTS HTTP ==="
 ./tests/api/entities-smoke.sh
 ./tests/api/entities-create-smoke.sh
@@ -94,5 +100,7 @@ python3 tests/api/identifiers-smoke.py
 python3 tests/api/relationships-smoke.py
 
 python3 tests/api/relationship-evidence-smoke.py
+
+python3 tests/api/research-audit-smoke.py
 
 echo "=== INTEGRATION VALIDEE ==="
