@@ -60,6 +60,25 @@ jobs:
         run: |
           docker compose -f compose.test.yaml config --quiet
 
+      - name: Install Symfony dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            -e HOME=/tmp \
+            -e COMPOSER_HOME=/tmp/composer \
+            -v "$PWD/apps/api:/app" \
+            -w /app \
+            composer:2 install \
+              --no-interaction \
+              --no-progress \
+              --prefer-dist \
+              --no-scripts
+
+          test -f apps/api/vendor/autoload_runtime.php
+
       - name: Run integration tests
         run: |
           ./scripts/test-integration.sh
