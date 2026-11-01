@@ -67,6 +67,9 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Authentication HTTP smoke tests
+        run: node scripts/auth-smoke.mjs
+
       - name: Verify production output
         run: |
           test -f .output/server/index.mjs
