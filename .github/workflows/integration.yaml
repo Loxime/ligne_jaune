@@ -83,15 +83,21 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-
           umask 077
 
-          if [[ ! -f apps/api/.env ]]; then
-            printf 'APP_ENV=dev\nAPP_DEBUG=1\n' > apps/api/.env
-          fi
+          {
+            printf 'APP_ENV=dev\n'
+            printf 'APP_DEBUG=1\n'
+            printf 'DEFAULT_URI=http://localhost:8080\n'
+            printf 'APP_SECRET=%s\n' "$(openssl rand -hex 32)"
+          } > apps/api/.env
+
+          chmod 600 apps/api/.env
 
           test -s apps/api/.env
-          echo "Symfony environment file ready."
+          grep -q '^DEFAULT_URI=' apps/api/.env
+
+          echo "Symfony CI environment initialized."
 
       - name: Run integration tests
         run: |
