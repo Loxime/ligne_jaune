@@ -37,6 +37,7 @@ const modules = [
         </div>
       </div>
 
+      <NuxtLink class="environment-tag" to="/entites">Explorer les entités</NuxtLink>
       <button class="environment-tag" type="button" @click="logout">Déconnexion</button>
     </header>
 
