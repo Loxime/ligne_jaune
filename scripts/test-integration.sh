@@ -103,4 +103,6 @@ python3 tests/api/relationship-evidence-smoke.py
 
 python3 tests/api/research-audit-smoke.py
 
+python3 tests/api/entity-network-smoke.py
+
 echo "=== INTEGRATION VALIDEE ==="

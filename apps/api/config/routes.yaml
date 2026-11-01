@@ -67,3 +67,8 @@ api_relationship_evidence_create:
     path: /api/relationships/{id}/evidence
     controller: App\Controller\RelationshipEvidenceController::create
     methods: [POST]
+
+api_entity_network:
+    path: /api/entities/{id}/relationships
+    controller: App\Controller\EntityNetworkController::__invoke
+    methods: [GET]
