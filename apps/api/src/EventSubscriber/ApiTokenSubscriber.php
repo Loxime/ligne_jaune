@@ -7,125 +7,104 @@ namespace App\EventSubscriber;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 
 final class ApiTokenSubscriber implements EventSubscriberInterface
 {
-    private const PUBLIC_PATH = '/api/health';
-
-    private const HEADERS = [
-        'Cache-Control' => 'no-store',
-        'X-Content-Type-Options' => 'nosniff',
-    ];
-
     public static function getSubscribedEvents(): array
     {
         return [
-            KernelEvents::REQUEST => ['onKernelRequest', 64],
+            KernelEvents::REQUEST => [
+                'onKernelRequest',
+                256,
+            ],
         ];
     }
 
     public function onKernelRequest(RequestEvent $event): void
     {
-        if (!$event->isMainRequest()) {
-            return;
-        }
-
         $request = $event->getRequest();
         $path = $request->getPathInfo();
 
-        if ($path === self::PUBLIC_PATH) {
-            return;
-        }
-
-        // Toutes les routes API sont privées par défaut.
         if ($path !== '/api' && !str_starts_with($path, '/api/')) {
             return;
         }
 
-        $secretFile = getenv('API_ACCESS_TOKEN_FILE');
-
-        if (!is_string($secretFile) || $secretFile === '') {
-            $event->setResponse($this->unavailable());
+        // Seul le healthcheck de base est public.
+        if (
+            $path === '/api/health'
+            && $request->isMethod(Request::METHOD_GET)
+        ) {
             return;
         }
 
-        if (!is_file($secretFile) || !is_readable($secretFile)) {
-            $event->setResponse($this->unavailable());
-            return;
-        }
-
-        $expected = file_get_contents($secretFile);
-
-        if ($expected === false) {
-            $event->setResponse($this->unavailable());
-            return;
-        }
-
-        $expected = rtrim($expected, "\r\n");
-
-        // Un secret mal configuré n'autorise aucune requête.
-        if (preg_match('/\A[a-f0-9]{64}\z/D', $expected) !== 1) {
-            $event->setResponse($this->unavailable());
-            return;
-        }
-
-        $authorization = $request->headers->all('authorization');
-
-        if (count($authorization) !== 1) {
-            $event->setResponse($this->unauthorized());
-            return;
-        }
-
-        $header = $authorization[0];
+        $secretPath = $_SERVER['API_ACCESS_TOKEN_FILE']
+            ?? $_ENV['API_ACCESS_TOKEN_FILE']
+            ?? getenv('API_ACCESS_TOKEN_FILE')
+            ?: '/run/secrets/api_access_token';
 
         if (
-            !is_string($header)
-            || preg_match(
-                '/\ABearer ([a-f0-9]{64})\z/iD',
-                $header,
+            !is_string($secretPath)
+            || !is_readable($secretPath)
+        ) {
+            $event->setResponse(
+                $this->error('AUTH_UNAVAILABLE', 503)
+            );
+            return;
+        }
+
+        $secret = file_get_contents($secretPath);
+
+        if ($secret === false) {
+            $event->setResponse(
+                $this->error('AUTH_UNAVAILABLE', 503)
+            );
+            return;
+        }
+
+        $expected = trim($secret);
+
+        if (
+            preg_match('/\A[a-f0-9]{64}\z/D', $expected) !== 1
+        ) {
+            $event->setResponse(
+                $this->error('AUTH_UNAVAILABLE', 503)
+            );
+            return;
+        }
+
+        $authorization = $request->headers->get(
+            'Authorization',
+            ''
+        );
+
+        if (
+            preg_match(
+                '/\ABearer ([a-f0-9]{64})\z/D',
+                $authorization,
                 $matches
             ) !== 1
+            || !hash_equals($expected, $matches[1])
         ) {
-            $event->setResponse($this->unauthorized());
-            return;
-        }
-
-        // Comparaison résistante aux attaques temporelles.
-        if (!hash_equals($expected, $matches[1])) {
-            $event->setResponse($this->unauthorized());
-            return;
+            $event->setResponse(
+                $this->error('UNAUTHORIZED', 401)
+            );
         }
     }
 
-    private function unauthorized(): JsonResponse
-    {
+    private function error(
+        string $code,
+        int $status
+    ): JsonResponse {
         return new JsonResponse(
+            ['error' => ['code' => $code]],
+            $status,
             [
-                'error' => [
-                    'code' => 'AUTHENTICATION_REQUIRED',
-                ],
-            ],
-            Response::HTTP_UNAUTHORIZED,
-            [
-                ...self::HEADERS,
-                'WWW-Authenticate' => 'Bearer realm="ligne-jaune-api"',
+                'Cache-Control' => 'no-store',
+                'X-Content-Type-Options' => 'nosniff',
+                'WWW-Authenticate' => 'Bearer realm="Ligne Jaune"',
             ]
-        );
-    }
-
-    private function unavailable(): JsonResponse
-    {
-        return new JsonResponse(
-            [
-                'error' => [
-                    'code' => 'AUTHENTICATION_UNAVAILABLE',
-                ],
-            ],
-            Response::HTTP_SERVICE_UNAVAILABLE,
-            self::HEADERS
         );
     }
 }

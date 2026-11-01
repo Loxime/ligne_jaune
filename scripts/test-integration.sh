@@ -19,6 +19,22 @@ compose config --quiet
 echo "=== DEMARRAGE ENVIRONNEMENT DE TEST ==="
 compose up -d --build --wait
 
+echo "=== CONTROLE CRITIQUE : AUTHENTIFICATION ==="
+
+compose exec -T api   php bin/console debug:event-dispatcher kernel.request |
+  grep -F 'ApiTokenSubscriber::onKernelRequest'
+
+anonymous_status="$(
+    curl -q -sS       -o /dev/null       -w '%{http_code}'       "$LJ_BASE_URL/api/entities"
+)"
+
+if [[ "$anonymous_status" != "401" ]]; then
+    echo "ERREUR CRITIQUE : route privée accessible sans jeton (HTTP $anonymous_status)." >&2
+    exit 1
+fi
+
+echo "OK : subscriber enregistré et accès anonyme refusé"
+
 echo "=== VERIFICATION SCHEMA INITIAL ==="
 
 initial_exists="$(
