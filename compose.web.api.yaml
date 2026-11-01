@@ -4,8 +4,13 @@ services:
       NUXT_API_BASE_URL: http://api:8080
       NUXT_API_TOKEN_FILE: /run/secrets/api_access_token
 
+      LJ_AUTH_SESSION_KEY_FILE: /run/secrets/lj_web_session_key
+      LJ_AUTH_PASSWORD_HASH_FILE: /run/secrets/lj_web_admin_hash
+
     secrets:
       - api_access_token
+      - lj_web_session_key
+      - lj_web_admin_hash
 
     networks:
       - default
@@ -19,3 +24,9 @@ networks:
 secrets:
   api_access_token:
     file: ./.secrets/api_access_token
+
+  lj_web_session_key:
+    file: ./.secrets/lj_web_session_key
+
+  lj_web_admin_hash:
+    file: ./.secrets/lj_web_admin.hash

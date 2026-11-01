@@ -1,17 +1,21 @@
+import { requireAdminSession } from '../../utils/auth'
 import { readFile } from 'node:fs/promises'
+import { createError, defineEventHandler, useRuntimeConfig } from 'nuxt/server'
 
 export default defineEventHandler(async (event) => {
-  setResponseHeader(event, 'Cache-Control', 'no-store')
+  await requireAdminSession(event)
 
-  const config = useRuntimeConfig(event)
+  event.res.headers.set('Cache-Control', 'no-store')
+
+  const config = useRuntimeConfig()
 
   const apiBaseUrl = String(config.apiBaseUrl || '')
   const apiTokenFile = String(config.apiTokenFile || '')
 
   if (!apiBaseUrl || !apiTokenFile) {
     throw createError({
-      statusCode: 503,
-      statusMessage: 'Backend not configured',
+      status: 503,
+      statusText: 'Backend not configured',
     })
   }
 
@@ -21,15 +25,15 @@ export default defineEventHandler(async (event) => {
     token = (await readFile(apiTokenFile, 'utf8')).trim()
   } catch {
     throw createError({
-      statusCode: 503,
-      statusMessage: 'Backend credentials unavailable',
+      status: 503,
+      statusText: 'Backend credentials unavailable',
     })
   }
 
   if (!/^[a-f0-9]{64}$/.test(token)) {
     throw createError({
-      statusCode: 503,
-      statusMessage: 'Backend credentials invalid',
+      status: 503,
+      statusText: 'Backend credentials invalid',
     })
   }
 
@@ -45,8 +49,8 @@ export default defineEventHandler(async (event) => {
     endpoint = new URL('/api/health/db', base).toString()
   } catch {
     throw createError({
-      statusCode: 503,
-      statusMessage: 'Backend configuration invalid',
+      status: 503,
+      statusText: 'Backend configuration invalid',
     })
   }
 
@@ -62,8 +66,8 @@ export default defineEventHandler(async (event) => {
     })
   } catch {
     throw createError({
-      statusCode: 502,
-      statusMessage: 'Backend unavailable',
+      status: 502,
+      statusText: 'Backend unavailable',
     })
   }
 

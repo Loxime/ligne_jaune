@@ -1,4 +1,9 @@
 <script setup lang="ts">
+async function logout() {
+  await $fetch('/api/auth/logout', { method: 'POST' })
+  await navigateTo('/login', { replace: true })
+}
+
 const { data: health } = await useFetch('/api/health')
 
 const modules = [
@@ -32,9 +37,7 @@ const modules = [
         </div>
       </div>
 
-      <span class="environment-tag">
-        PROTOTYPE LOCAL
-      </span>
+      <button class="environment-tag" type="button" @click="logout">Déconnexion</button>
     </header>
 
     <main class="main-content">
