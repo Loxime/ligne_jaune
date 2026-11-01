@@ -21,19 +21,51 @@ compose up -d --build --wait
 
 echo "=== CONTROLE CRITIQUE : AUTHENTIFICATION ==="
 
-compose exec -T api   php bin/console debug:event-dispatcher kernel.request |
-  grep -F 'ApiTokenSubscriber::onKernelRequest'
+echo "Vérification des réponses HTTP..."
 
-anonymous_status="$(
-    curl -q -sS       -o /dev/null       -w '%{http_code}'       "$LJ_BASE_URL/api/entities"
+public_status="$(
+    curl -q --silent --show-error --max-time 10 \
+      --output /dev/null \
+      --write-out '%{http_code}' \
+      "$LJ_BASE_URL/api/health"
 )"
 
-if [[ "$anonymous_status" != "401" ]]; then
-    echo "ERREUR CRITIQUE : route privée accessible sans jeton (HTTP $anonymous_status)." >&2
+private_status="$(
+    curl -q --silent --show-error --max-time 10 \
+      --output /dev/null \
+      --write-out '%{http_code}' \
+      "$LJ_BASE_URL/api/entities"
+)"
+
+echo "Route publique : HTTP $public_status"
+echo "Route privée sans jeton : HTTP $private_status"
+
+if [[ "$public_status" != "200" ||
+      "$private_status" != "401" ]]; then
+
+    echo "ERREUR CRITIQUE : authentification API incorrecte." >&2
+
+    echo "=== DIAGNOSTIC : ENVIRONNEMENT SYMFONY ==="
+    compose exec -T api \
+      php bin/console about || true
+
+    echo "=== DIAGNOSTIC : SUBSCRIBER ==="
+    compose exec -T api \
+      php bin/console debug:event-dispatcher kernel.request || true
+
+    echo "=== DIAGNOSTIC : SERVICE ==="
+    compose exec -T api \
+      php bin/console debug:container \
+        'App\EventSubscriber\ApiTokenSubscriber' || true
+
+    echo "=== DIAGNOSTIC : LOGS API ==="
+    compose logs --tail=60 api || true
+
     exit 1
 fi
 
-echo "OK : subscriber enregistré et accès anonyme refusé"
+echo "OK : authentification HTTP vérifiée"
+echo ""
 
 echo "=== VERIFICATION SCHEMA INITIAL ==="
 

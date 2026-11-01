@@ -27,4 +27,3 @@ services:
         autoconfigure: false
         tags:
             - kernel.event_subscriber
-
