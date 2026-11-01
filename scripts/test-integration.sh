@@ -19,6 +19,17 @@ compose config --quiet
 echo "=== DEMARRAGE ENVIRONNEMENT DE TEST ==="
 compose up -d --build --wait
 
+echo "=== VERIFICATION DEMARRAGE SYMFONY ==="
+
+if ! compose exec -T api   php bin/console about --no-ansi > /dev/null; then
+
+    echo "ERREUR : Symfony ne démarre pas correctement." >&2
+    exit 1
+fi
+
+echo "OK : Symfony démarre correctement"
+echo ""
+
 echo "=== CONTROLE CRITIQUE : AUTHENTIFICATION ==="
 
 echo "Vérification des réponses HTTP..."

@@ -79,6 +79,20 @@ jobs:
 
           test -f apps/api/vendor/autoload_runtime.php
 
+      - name: Prepare Symfony dotenv
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          umask 077
+
+          if [[ ! -f apps/api/.env ]]; then
+            printf 'APP_ENV=dev\nAPP_DEBUG=1\n' > apps/api/.env
+          fi
+
+          test -s apps/api/.env
+          echo "Symfony environment file ready."
+
       - name: Run integration tests
         run: |
           ./scripts/test-integration.sh
