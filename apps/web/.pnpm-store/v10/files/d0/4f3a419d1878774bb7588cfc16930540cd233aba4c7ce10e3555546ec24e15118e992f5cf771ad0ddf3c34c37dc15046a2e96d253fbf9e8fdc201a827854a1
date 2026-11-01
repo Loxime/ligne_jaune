@@ -1,0 +1,1 @@
+export declare function isValidIslandKey(key: unknown): key is string;

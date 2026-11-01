@@ -1,0 +1,26 @@
+import { CachedResponse, RendererEvent, RendererRouteRules } from "./runtime.js";
+import { Script } from "@unhead/vue";
+import { NuxtPayload, NuxtSSRContext } from "#app/types";
+export declare function renderPayloadResponse(ssrContext: NuxtSSRContext, event: RendererEvent): CachedResponse;
+export declare function renderPayloadJsonScript(opts: {
+  ssrContext: NuxtSSRContext;
+  data?: any;
+  src?: string;
+}): Script[];
+export declare function renderPayloadScript(opts: {
+  ssrContext: NuxtSSRContext;
+  routeOptions: RendererRouteRules;
+  data?: any;
+  src?: string;
+}): Script[];
+export declare function getPayloadKeySizes(data: NuxtPayload['data'] | undefined, reducers: NuxtSSRContext['~payloadReducers']): Array<[string, number]>;
+interface SplitPayload {
+  initial: Omit<NuxtPayload, 'data' | 'prefetchLinks'>;
+  payload: {
+    data?: NuxtPayload['data'];
+    prerenderedAt?: NuxtPayload['prerenderedAt'];
+    prefetchLinks?: NuxtPayload['prefetchLinks'];
+  };
+}
+export declare function splitPayload(ssrContext: NuxtSSRContext): SplitPayload;
+export {};

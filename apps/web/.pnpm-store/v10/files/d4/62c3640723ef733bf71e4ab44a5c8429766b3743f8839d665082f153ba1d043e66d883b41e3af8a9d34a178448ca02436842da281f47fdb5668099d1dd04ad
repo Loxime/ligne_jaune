@@ -1,0 +1,1 @@
+export declare function lazyCachedFunction<T>(fn: () => Promise<T>): () => Promise<T>;
