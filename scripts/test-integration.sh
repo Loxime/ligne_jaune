@@ -93,4 +93,6 @@ python3 tests/api/identifiers-smoke.py
 
 python3 tests/api/relationships-smoke.py
 
+python3 tests/api/relationship-evidence-smoke.py
+
 echo "=== INTEGRATION VALIDEE ==="

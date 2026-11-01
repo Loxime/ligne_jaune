@@ -57,3 +57,13 @@ api_relationship_show:
     path: /api/relationships/{id}
     controller: App\Controller\RelationshipController::show
     methods: [GET]
+
+api_relationship_evidence_index:
+    path: /api/relationships/{id}/evidence
+    controller: App\Controller\RelationshipEvidenceController::index
+    methods: [GET]
+
+api_relationship_evidence_create:
+    path: /api/relationships/{id}/evidence
+    controller: App\Controller\RelationshipEvidenceController::create
+    methods: [POST]
