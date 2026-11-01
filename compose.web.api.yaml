@@ -1,0 +1,21 @@
+services:
+  web:
+    environment:
+      NUXT_API_BASE_URL: http://api:8080
+      NUXT_API_TOKEN_FILE: /run/secrets/api_access_token
+
+    secrets:
+      - api_access_token
+
+    networks:
+      - default
+      - symfony_application
+
+networks:
+  symfony_application:
+    external: true
+    name: ligne-jaune-dev_application
+
+secrets:
+  api_access_token:
+    file: ./.secrets/api_access_token
