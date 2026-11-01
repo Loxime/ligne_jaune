@@ -1,0 +1,74 @@
+name: Web — Nuxt CI
+
+on:
+  push:
+    branches:
+      - feat/01-fondations
+      - main
+    paths:
+      - 'apps/web/**'
+      - 'compose.web.yaml'
+      - 'compose.web.api.yaml'
+      - '.github/workflows/web.yaml'
+
+  pull_request:
+    paths:
+      - 'apps/web/**'
+      - 'compose.web.yaml'
+      - 'compose.web.api.yaml'
+      - '.github/workflows/web.yaml'
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  web:
+    name: Nuxt — Typecheck & Build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        working-directory: apps/web
+        shell: bash
+
+    env:
+      CI: "true"
+      NUXT_TELEMETRY_DISABLED: "1"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.17.1
+          package_json_file: apps/web/package.json
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: apps/web/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm exec nuxt typecheck
+
+      - name: Build
+        run: pnpm build
+
+      - name: Verify production output
+        run: |
+          test -f .output/server/index.mjs
+          test -d .output/public
+          echo "Nuxt production build verified."
