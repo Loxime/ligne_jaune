@@ -6,11 +6,15 @@ services:
 
       LJ_AUTH_SESSION_KEY_FILE: /run/secrets/lj_web_session_key
       LJ_AUTH_PASSWORD_HASH_FILE: /run/secrets/lj_web_admin_hash
+      LJ_AUTH_SESSION_STORE_DIR: /var/lib/ligne-jaune/sessions
 
     secrets:
       - api_access_token
       - lj_web_session_key
       - lj_web_admin_hash
+
+    volumes:
+      - ./.secrets/lj_web_sessions:/var/lib/ligne-jaune/sessions
 
     networks:
       - default

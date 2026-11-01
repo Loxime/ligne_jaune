@@ -1,4 +1,8 @@
 import { readFile } from 'node:fs/promises'
+import {
+  createAdminSessionId,
+  revokeAdminSessionId,
+} from '../../utils/session-store'
 import { scryptSync, timingSafeEqual } from 'node:crypto'
 import { createError, defineEventHandler, getRequestIP, readBody } from 'nuxt/server'
 import {
@@ -116,10 +120,20 @@ export default defineEventHandler(async (event) => {
 
   const session = await getAuthSession(event)
 
-  await session.update({
-    user: 'admin',
-    issuedAt: Date.now(),
-  })
+  await revokeAdminSessionId(session.data.sessionId)
+
+  const sessionId = await createAdminSessionId()
+
+  try {
+    await session.update({
+      user: 'admin',
+      issuedAt: Date.now(),
+      sessionId,
+    })
+  } catch (error) {
+    await revokeAdminSessionId(sessionId)
+    throw error
+  }
 
   return { authenticated: true }
 })

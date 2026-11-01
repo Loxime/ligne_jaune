@@ -1,11 +1,14 @@
 import { readFile } from 'node:fs/promises'
 import { createError, useSession, type SessionEvent } from 'nuxt/server'
 
+import { isActiveAdminSessionId } from './session-store'
+
 type AuthEvent = SessionEvent
 
 interface AuthData extends Record<string, unknown> {
   user?: string
   issuedAt?: number
+  sessionId?: string
 }
 
 export async function getAuthSession(event: AuthEvent) {
@@ -49,14 +52,26 @@ export async function getAuthSession(event: AuthEvent) {
   })
 }
 
+export async function isValidAdminSession(
+  data: AuthData,
+): Promise<boolean> {
+  if (
+    data.user !== 'admin'
+    || typeof data.issuedAt !== 'number'
+    || !Number.isFinite(data.issuedAt)
+    || data.issuedAt > Date.now()
+    || Date.now() - data.issuedAt > 2 * 60 * 60 * 1000
+  ) {
+    return false
+  }
+
+  return isActiveAdminSessionId(data.sessionId)
+}
+
 export async function requireAdminSession(event: AuthEvent) {
   const session = await getAuthSession(event)
 
-  if (
-    session.data.user !== 'admin'
-    || typeof session.data.issuedAt !== 'number'
-    || Date.now() - session.data.issuedAt > 2 * 60 * 60 * 1000
-  ) {
+  if (!(await isValidAdminSession(session.data))) {
     throw createError({
       status: 401,
       statusText: 'Authentication required',

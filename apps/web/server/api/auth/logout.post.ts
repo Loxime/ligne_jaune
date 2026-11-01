@@ -1,4 +1,5 @@
 import { defineEventHandler } from 'nuxt/server'
+import { revokeAdminSessionId } from '../../utils/session-store'
 import {
   getAuthSession,
   requireSameOrigin,
@@ -10,6 +11,7 @@ export default defineEventHandler(async (event) => {
 
   const session = await getAuthSession(event)
 
+  await revokeAdminSessionId(session.data.sessionId)
   await session.clear()
 
   return { authenticated: false }

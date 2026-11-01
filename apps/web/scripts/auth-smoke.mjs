@@ -3,6 +3,7 @@ import { spawn } from 'node:child_process'
 import { once } from 'node:events'
 import {
   mkdtemp,
+  mkdir,
   writeFile,
   rm,
 } from 'node:fs/promises'
@@ -47,6 +48,8 @@ async function run() {
 
   const sessionFile = join(tmp, 'session.key')
   const hashFile = join(tmp, 'admin.hash')
+  const sessionDirectory = join(tmp, 'sessions')
+  await mkdir(sessionDirectory, { mode: 0o700 })
 
   await writeFile(
     sessionFile,
@@ -79,6 +82,7 @@ async function run() {
         NUXT_API_TOKEN_FILE: '',
         LJ_AUTH_SESSION_KEY_FILE: sessionFile,
         LJ_AUTH_PASSWORD_HASH_FILE: hashFile,
+        LJ_AUTH_SESSION_STORE_DIR: sessionDirectory,
       },
       stdio: ['ignore', 'pipe', 'pipe'],
     },
@@ -211,10 +215,23 @@ async function run() {
 
   console.log('✓ Déconnexion et instruction de suppression du cookie')
 
-  const afterLogout = await request('/api/backend/health')
+  const afterLogout = await request('/api/backend/health', {
+    headers: { Cookie: cookie },
+  })
+
   assert.equal(afterLogout.status, 401)
 
-  console.log('✓ Navigation sans cookie refusée après déconnexion')
+  const replayedSession = await request('/api/auth/me', {
+    headers: { Cookie: cookie },
+  })
+
+  assert.equal(replayedSession.status, 200)
+  assert.equal(
+    (await replayedSession.json()).authenticated,
+    false,
+  )
+
+  console.log('✓ Ancien cookie révoqué côté serveur')
   console.log('=== TESTS AUTHENTIFICATION VALIDÉS ===')
 }
 
