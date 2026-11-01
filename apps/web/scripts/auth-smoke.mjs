@@ -136,6 +136,12 @@ async function run() {
 
   console.log('✓ Passerelle interdite sans session')
 
+  const anonymousEntities = await request('/api/entities')
+  assert.equal(anonymousEntities.status, 401)
+
+  console.log('✓ Entités interdites sans session')
+
+
   const invalid = await request('/api/auth/login', {
     method: 'POST',
     headers: {
@@ -200,6 +206,16 @@ async function run() {
   assert.equal(backend.status, 503)
 
   console.log('✓ Passerelle autorisée après authentification')
+
+  const authorizedEntities = await request('/api/entities', {
+    headers: { Cookie: cookie },
+  })
+
+  // Le backend Symfony est volontairement absent de ce test CI.
+  assert.equal(authorizedEntities.status, 503)
+
+  console.log('✓ Entités accessibles uniquement après contrôle de session')
+
 
   const logout = await request('/api/auth/logout', {
     method: 'POST',
