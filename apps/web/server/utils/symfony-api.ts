@@ -1,33 +1,50 @@
 import { readFile } from 'node:fs/promises'
 import { createError, useRuntimeConfig } from 'nuxt/server'
 
-type AllowedPath = '/api/health/db' | '/api/entities'
+const UUID = '[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}'
+
+const ENTITY_PATH = new RegExp(
+  `^/api/entities/${UUID}(?:/relationships(?:\\?[a-z0-9=&]*)?)?$`,
+  'i',
+)
+
+function isAllowedPath(path: string): boolean {
+  return path === '/api/health/db'
+    || path === '/api/entities'
+    || ENTITY_PATH.test(path)
+}
 
 export async function getPrivateSymfonyJson(
-  path: AllowedPath,
+  path: string,
 ): Promise<unknown> {
+  if (!isAllowedPath(path)) {
+    throw createError({
+      status: 400,
+      statusText: 'Invalid backend path',
+    })
+  }
+
   const config = useRuntimeConfig()
+  const apiBaseUrl = String(config.apiBaseUrl || '')
+  const apiTokenFile = String(config.apiTokenFile || '')
 
-  const baseUrl = String(config.apiBaseUrl || '')
-  const tokenFile = String(config.apiTokenFile || '')
-
-  if (!baseUrl || !tokenFile) {
+  if (!apiBaseUrl || !apiTokenFile) {
     throw createError({
       status: 503,
       statusText: 'Backend not configured',
     })
   }
 
-  let endpoint: string
+  let endpoint: URL
 
   try {
-    const base = new URL(baseUrl)
+    const base = new URL(apiBaseUrl)
 
     if (!['http:', 'https:'].includes(base.protocol)) {
       throw new Error('Unsupported protocol')
     }
 
-    endpoint = new URL(path, base).toString()
+    endpoint = new URL(path, base)
   } catch {
     throw createError({
       status: 503,
@@ -38,7 +55,7 @@ export async function getPrivateSymfonyJson(
   let token: string
 
   try {
-    token = (await readFile(tokenFile, 'utf8')).trim()
+    token = (await readFile(apiTokenFile, 'utf8')).trim()
   } catch {
     throw createError({
       status: 503,
@@ -53,21 +70,57 @@ export async function getPrivateSymfonyJson(
     })
   }
 
+  let response: Response
+
   try {
-    return await $fetch(endpoint, {
+    response = await fetch(endpoint, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`,
         Accept: 'application/json',
       },
-      timeout: 5000,
-      retry: 0,
       redirect: 'manual',
+      signal: AbortSignal.timeout(5000),
     })
   } catch {
     throw createError({
       status: 502,
       statusText: 'Backend unavailable',
+    })
+  }
+
+  if (response.status === 404 || response.status === 400) {
+    throw createError({
+      status: response.status,
+      statusText: response.status === 404
+        ? 'Resource not found'
+        : 'Invalid backend request',
+    })
+  }
+
+  if (!response.ok) {
+    throw createError({
+      status: 502,
+      statusText: 'Backend unavailable',
+    })
+  }
+
+  if (
+    !response.headers.get('content-type')
+      ?.toLowerCase().includes('application/json')
+  ) {
+    throw createError({
+      status: 502,
+      statusText: 'Unexpected backend content type',
+    })
+  }
+
+  try {
+    return await response.json() as unknown
+  } catch {
+    throw createError({
+      status: 502,
+      statusText: 'Invalid backend JSON',
     })
   }
 }

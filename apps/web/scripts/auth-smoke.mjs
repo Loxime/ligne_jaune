@@ -141,6 +141,16 @@ async function run() {
 
   console.log('✓ Entités interdites sans session')
 
+  const testEntityId = '00000000-0000-4000-8000-000000000001'
+
+  const anonymousDetail = await request(
+    `/api/entities/${testEntityId}`,
+  )
+  assert.equal(anonymousDetail.status, 401)
+
+  console.log('✓ Fiches individuelles protégées')
+
+
 
   const invalid = await request('/api/auth/login', {
     method: 'POST',

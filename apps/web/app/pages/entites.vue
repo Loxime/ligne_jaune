@@ -122,7 +122,14 @@ function formatDate(value: string): string {
                 {{ kindLabels[entity.kind] }}
               </span>
 
-              <h3>{{ entity.name }}</h3>
+              <h3>
+                <NuxtLink
+                  :to="`/entites/${entity.id}`"
+                  class="entity-detail-link"
+                >
+                  {{ entity.name }}
+                </NuxtLink>
+              </h3>
 
               <p v-if="entity.description" class="entity-description">
                 {{ entity.description }}
@@ -363,4 +370,14 @@ h1 {
     text-align: left;
   }
 }
+.entity-detail-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.entity-detail-link:hover {
+  color: #e5bb52;
+  text-decoration: underline;
+}
+
 </style>
