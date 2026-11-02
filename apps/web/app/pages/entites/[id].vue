@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Entity } from '~/types/entities'
+import type { EntityNetworkIndexResponse } from '~/types/relationships'
 
 const route = useRoute()
 const id = String(route.params.id || '')
@@ -10,6 +11,16 @@ const { data, status, error } = await useFetch<{ data: Entity }>(
 )
 
 const entity = computed(() => data.value?.data)
+
+const {
+  data: network,
+  status: networkStatus,
+  error: networkError,
+} = await useFetch<EntityNetworkIndexResponse>(
+  `/api/entities/${encodeURIComponent(id)}/relationships`,
+  { key: `lj-entity-network-${id}` },
+)
+
 
 useHead({
   title: computed(() =>
@@ -128,11 +139,27 @@ const kindNames: Record<string, string> = {
             </div>
 
             <div class="empty-detail">
-              <h3>Exploration des contacts</h3>
+              <h3>Relations documentaires</h3>
+
+              <p v-if="networkStatus === 'pending'">
+                Chargement des relations…
+              </p>
+
+              <p v-else-if="networkError">
+                Impossible de consulter les relations actuellement.
+              </p>
+
+              <p v-else-if="network">
+                {{ network.pagination.returned }} relation(s)
+                renvoyée(s) sur cette page.
+                <span v-if="network.pagination.has_more">
+                  D'autres résultats sont disponibles.
+                </span>
+              </p>
+
               <p>
-                Le réseau de relations est disponible côté Symfony.
-                Son affichage détaillé sera raccordé après validation
-                du format des relations et de leurs preuves.
+                Les noms, fonctions et justificatifs seront affichés
+                après validation du format détaillé des relations.
               </p>
               <NuxtLink to="/reseau">Ouvrir le réseau 3D</NuxtLink>
             </div>

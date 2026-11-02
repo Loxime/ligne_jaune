@@ -150,6 +150,14 @@ async function run() {
 
   console.log('✓ Fiches individuelles protégées')
 
+  const anonymousNetwork = await request(
+    `/api/entities/${testEntityId}/relationships`,
+  )
+  assert.equal(anonymousNetwork.status, 401)
+
+  console.log('✓ Réseau individuel protégé')
+
+
 
 
   const invalid = await request('/api/auth/login', {
@@ -216,6 +224,15 @@ async function run() {
   assert.equal(backend.status, 503)
 
   console.log('✓ Passerelle autorisée après authentification')
+
+  const invalidNetworkFilter = await request(
+    `/api/entities/${testEntityId}/relationships?direction=invalid`,
+    { headers: { Cookie: cookie } },
+  )
+  assert.equal(invalidNetworkFilter.status, 400)
+
+  console.log('✓ Filtres réseau invalides rejetés')
+
 
   const authorizedEntities = await request('/api/entities', {
     headers: { Cookie: cookie },
