@@ -47,27 +47,91 @@ function parseInteger(
   return parsed
 }
 
-function isNetworkResponse(
-  value: unknown,
-): value is EntityNetworkIndexResponse {
-  if (!value || typeof value !== 'object') return false
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object'
+    && value !== null
+    && !Array.isArray(value)
+}
 
-  const record = value as Record<string, unknown>
+function isNullableString(value: unknown): boolean {
+  return value === null || typeof value === 'string'
+}
 
-  if (!Array.isArray(record.data)) return false
+function isRelationship(value: unknown): boolean {
+  if (!isRecord(value)) return false
 
-  const pagination = record.pagination
+  const uuidFields = [
+    'id',
+    'subject_entity_id',
+    'object_entity_id',
+    'source_id',
+  ]
 
-  if (!pagination || typeof pagination !== 'object') {
+  if (uuidFields.some(field =>
+    typeof value[field] !== 'string'
+    || !UUID.test(value[field] as string)
+  )) return false
+
+  const textFields = [
+    'subject_name',
+    'object_name',
+    'relation_type',
+    'source_title',
+    'source_kind',
+    'created_at',
+  ]
+
+  if (textFields.some(field =>
+    typeof value[field] !== 'string'
+  )) return false
+
+  const kinds = [
+    'person', 'company', 'association',
+    'institution', 'other',
+  ]
+
+  if (!kinds.includes(String(value.subject_kind))
+    || !kinds.includes(String(value.object_kind))) {
     return false
   }
 
-  const p = pagination as Record<string, unknown>
+  if (!STATUSES.includes(String(value.status))) return false
+
+  if (!isNullableString(value.valid_from)
+    || !isNullableString(value.valid_until)
+    || !isNullableString(value.source_locator)) {
+    return false
+  }
+
+  return Number.isInteger(value.supporting_evidence_count)
+    && Number(value.supporting_evidence_count) >= 0
+    && Number.isInteger(value.contradictory_evidence_count)
+    && Number(value.contradictory_evidence_count) >= 0
+}
+
+function isNetworkResponse(
+  value: unknown,
+): value is EntityNetworkIndexResponse {
+  if (!isRecord(value)) return false
+
+  if (!Array.isArray(value.data)
+    || !value.data.every(isRelationship)) {
+    return false
+  }
+
+  const p = value.pagination
+
+  if (!isRecord(p)) return false
 
   return Number.isInteger(p.limit)
+    && Number(p.limit) >= 1
+    && Number(p.limit) <= 100
     && Number.isInteger(p.offset)
+    && Number(p.offset) >= 0
+    && Number(p.offset) <= 10000
     && Number.isInteger(p.returned)
-    && p.returned === record.data.length
+    && p.returned === value.data.length
+    && value.data.length <= Number(p.limit)
     && typeof p.has_more === 'boolean'
 }
 

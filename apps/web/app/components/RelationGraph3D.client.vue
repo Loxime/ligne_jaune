@@ -1,18 +1,24 @@
 <script setup lang="ts">
 import type { Entity, EntityKind } from '~/types/entities'
+import type {
+  EntityRelationship,
+  RelationStatus,
+} from '~/types/relationships'
 
 const props = defineProps<{
-  entities: Entity[]
+  root: Entity | null
+  relations: EntityRelationship[]
   demo: boolean
 }>()
 
 const emit = defineEmits<{
   select: [id: string]
+  selectRelation: [id: string]
 }>()
 
 const container = ref<HTMLElement | null>(null)
 
-const colors: Record<EntityKind, string> = {
+const kindColors: Record<EntityKind, string> = {
   person: '#E7BC69',
   company: '#7DAEE7',
   association: '#8DD0BC',
@@ -20,63 +26,120 @@ const colors: Record<EntityKind, string> = {
   other: '#A9AFBF',
 }
 
+const statusColors: Record<RelationStatus, string> = {
+  reviewed: '#85CBA5',
+  draft: '#D6AC64',
+  disputed: '#E58B83',
+  retracted: '#85818C',
+}
+
 function escapeHtml(value: string): string {
-  return value.replace(/[&<>"']/g, char => ({
+  const entities: Record<string, string> = {
     '&': '&amp;',
     '<': '&lt;',
     '>': '&gt;',
     '"': '&quot;',
     "'": '&#39;',
-  })[char] || char)
+  }
+
+  return value.replace(/[&<>"']/g, char => entities[char] || char)
 }
 
 function graphData() {
   if (props.demo) {
-    const kinds = Object.keys(colors) as EntityKind[]
+    const kinds = Object.keys(kindColors) as EntityKind[]
 
-    const nodes = Array.from({ length: 42 }, (_, index) => {
-      const kind = kinds[index % kinds.length]!
+    const nodes = Array.from({ length: 42 }, (_, i) => {
+      const kind = kinds[i % kinds.length]!
 
       return {
-        id: `demo-${index}`,
-        name: `Entité fictive ${index + 1}`,
-        label: `Entité fictive ${index + 1}`,
-        kind,
-        color: colors[kind],
-        val: index % 9 === 0 ? 6 : 2,
+        id: `demo-${i}`,
+        label: `Entité fictive ${i + 1}`,
+        color: kindColors[kind],
+        val: i === 0 ? 8 : 3,
       }
     })
 
     const links = nodes.slice(1).map((node, index) => ({
+      id: `demo-link-${index}`,
       source: nodes[Math.floor(index / 2)]!.id,
       target: node.id,
+      label: 'Connexion fictive',
+      color: '#8E83B9',
     }))
 
     return { nodes, links }
   }
 
+  const nodes = new Map<string, {
+    id: string
+    label: string
+    color: string
+    val: number
+  }>()
+
+  function addNode(
+    id: string,
+    name: string,
+    kind: EntityKind,
+  ) {
+    if (nodes.has(id)) return
+
+    nodes.set(id, {
+      id,
+      label: escapeHtml(name),
+      color: kindColors[kind],
+      val: id === props.root?.id ? 9 : 3,
+    })
+  }
+
+  if (props.root) {
+    addNode(
+      props.root.id,
+      props.root.name,
+      props.root.kind,
+    )
+  }
+
+  const links = props.relations.map(relation => {
+    addNode(
+      relation.subject_entity_id,
+      relation.subject_name,
+      relation.subject_kind,
+    )
+
+    addNode(
+      relation.object_entity_id,
+      relation.object_name,
+      relation.object_kind,
+    )
+
+    return {
+      id: relation.id,
+      source: relation.subject_entity_id,
+      target: relation.object_entity_id,
+      label: escapeHtml(
+        `${relation.relation_type} — ${relation.status}`,
+      ),
+      color: statusColors[relation.status],
+    }
+  })
+
   return {
-    nodes: props.entities.map(entity => ({
-      id: entity.id,
-      name: entity.name,
-      label: escapeHtml(entity.name),
-      kind: entity.kind,
-      color: colors[entity.kind],
-      val: 3,
-    })),
-    links: [],
+    nodes: [...nodes.values()],
+    links,
   }
 }
 
+let disposed = false
 let dispose = () => {}
-let unmounted = false
 
 onMounted(async () => {
   if (!container.value) return
 
   const { default: ForceGraph3D } = await import('3d-force-graph')
 
-  if (!container.value || unmounted) return
+  if (disposed || !container.value) return
 
   const element = container.value
 
@@ -86,11 +149,11 @@ onMounted(async () => {
     .nodeColor('color')
     .nodeLabel('label')
     .nodeVal('val')
-    .nodeOpacity(0.94)
-    .linkColor(() => '#8E83B9')
-    .linkOpacity(0.36)
-    .linkDirectionalParticles(1)
-    .linkDirectionalParticleSpeed(0.004)
+    .linkColor('color')
+    .linkLabel('label')
+    .linkOpacity(0.65)
+    .linkDirectionalArrowLength(3)
+    .linkDirectionalArrowRelPos(0.8)
     .width(Math.max(element.clientWidth, 320))
     .height(560)
 
@@ -100,23 +163,36 @@ onMounted(async () => {
     }
   })
 
+  graph.onLinkClick(link => {
+    if (
+      !props.demo
+      && 'id' in link
+      && typeof link.id === 'string'
+    ) {
+      emit('selectRelation', link.id)
+    }
+  })
+
   graph.graphData(graphData())
 
-  const resizeObserver = new ResizeObserver(() => {
+  const observer = new ResizeObserver(() => {
     graph.width(Math.max(element.clientWidth, 320))
   })
 
-  resizeObserver.observe(element)
+  observer.observe(element)
 
   const stopWatching = watch(
-    () => [props.demo, props.entities],
+    [
+      () => props.demo,
+      () => props.root,
+      () => props.relations,
+    ],
     () => graph.graphData(graphData()),
-    { deep: true },
   )
 
   dispose = () => {
     stopWatching()
-    resizeObserver.disconnect()
+    observer.disconnect()
     graph.pauseAnimation()
     graph.renderer().dispose()
     element.replaceChildren()
@@ -124,7 +200,7 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
-  unmounted = true
+  disposed = true
   dispose()
 })
 </script>
@@ -133,14 +209,14 @@ onBeforeUnmount(() => {
   <div
     ref="container"
     class="graph-container"
-    aria-label="Explorateur interactif du réseau en trois dimensions"
+    aria-label="Graphe interactif des relations documentaires"
   />
 </template>
 
 <style scoped>
 .graph-container {
-  width: 100%;
   min-height: 560px;
+  width: 100%;
   overflow: hidden;
   background: #11111d;
 }
